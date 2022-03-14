@@ -275,6 +275,7 @@ public class PubSubToBigQueryBatched {
                     .withExtendedErrorInfo()
                     .withMethod(BigQueryIO.Write.Method.FILE_LOADS)
                     .withTriggeringFrequency(Duration.standardMinutes(5))
+                    .withNumFileShards(3)
                     // .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors())
                     .to(options.getOutputTableSpec()));
 
