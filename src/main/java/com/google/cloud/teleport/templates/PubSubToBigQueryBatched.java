@@ -16,6 +16,7 @@
  */
 
 package com.google.cloud.teleport.templates;
+
 import static com.google.cloud.teleport.templates.TextToBigQueryStreaming.wrapBigQueryInsertError;
 
 import com.google.api.services.bigquery.model.TableRow;
@@ -64,20 +65,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link PubSubToBigQuery} pipeline is a streaming pipeline which ingests data in JSON format
- * from Cloud Pub/Sub, executes a UDF, and outputs the resulting records to BigQuery. Any errors
- * which occur in the transformation of the data or execution of the UDF will be output to a
- * separate errors table in BigQuery. The errors table will be created if it does not exist prior to
- * execution. Both output and error tables are specified by the user as template parameters.
+ * The {@link PubSubToBigQuery} pipeline is a streaming pipeline which ingests
+ * data in JSON format
+ * from Cloud Pub/Sub, executes a UDF, and outputs the resulting records to
+ * BigQuery. Any errors
+ * which occur in the transformation of the data or execution of the UDF will be
+ * output to a
+ * separate errors table in BigQuery. The errors table will be created if it
+ * does not exist prior to
+ * execution. Both output and error tables are specified by the user as template
+ * parameters.
  *
- * <p><b>Pipeline Requirements</b>
+ * <p>
+ * <b>Pipeline Requirements</b>
  *
  * <ul>
- *   <li>The Pub/Sub topic exists.
- *   <li>The BigQuery output table exists.
+ * <li>The Pub/Sub topic exists.
+ * <li>The BigQuery output table exists.
  * </ul>
  *
- * <p><b>Example Usage</b>
+ * <p>
+ * <b>Example Usage</b>
  *
  * <pre>
  * # Set the pipeline vars
@@ -127,37 +135,41 @@ import org.slf4j.LoggerFactory;
  */
 
 public class PubSubToBigQueryBatched {
-     /** The log to output status messages to. */
+  /** The log to output status messages to. */
   private static final Logger LOG = LoggerFactory.getLogger(PubSubToBigQueryBatched.class);
 
   /** The tag for the main output for the UDF. */
-  public static final TupleTag<FailsafeElement<PubsubMessage, String>> UDF_OUT =
-      new TupleTag<FailsafeElement<PubsubMessage, String>>() {};
+  public static final TupleTag<FailsafeElement<PubsubMessage, String>> UDF_OUT = new TupleTag<FailsafeElement<PubsubMessage, String>>() {
+  };
 
   /** The tag for the main output of the json transformation. */
-  public static final TupleTag<TableRow> TRANSFORM_OUT = new TupleTag<TableRow>() {};
+  public static final TupleTag<TableRow> TRANSFORM_OUT = new TupleTag<TableRow>() {
+  };
 
   /** The tag for the dead-letter output of the udf. */
-  public static final TupleTag<FailsafeElement<PubsubMessage, String>> UDF_DEADLETTER_OUT =
-      new TupleTag<FailsafeElement<PubsubMessage, String>>() {};
+  public static final TupleTag<FailsafeElement<PubsubMessage, String>> UDF_DEADLETTER_OUT = new TupleTag<FailsafeElement<PubsubMessage, String>>() {
+  };
 
   /** The tag for the dead-letter output of the json to table row transform. */
-  public static final TupleTag<FailsafeElement<PubsubMessage, String>> TRANSFORM_DEADLETTER_OUT =
-      new TupleTag<FailsafeElement<PubsubMessage, String>>() {};
+  public static final TupleTag<FailsafeElement<PubsubMessage, String>> TRANSFORM_DEADLETTER_OUT = new TupleTag<FailsafeElement<PubsubMessage, String>>() {
+  };
 
-  /** The default suffix for error tables if dead letter table is not specified. */
+  /**
+   * The default suffix for error tables if dead letter table is not specified.
+   */
   public static final String DEFAULT_DEADLETTER_TABLE_SUFFIX = "_error_records";
 
   /** Pubsub message/string coder for pipeline. */
-  public static final FailsafeElementCoder<PubsubMessage, String> CODER =
-      FailsafeElementCoder.of(PubsubMessageWithAttributesCoder.of(), StringUtf8Coder.of());
+  public static final FailsafeElementCoder<PubsubMessage, String> CODER = FailsafeElementCoder
+      .of(PubsubMessageWithAttributesCoder.of(), StringUtf8Coder.of());
 
   /** String/String Coder for FailsafeElement. */
-  public static final FailsafeElementCoder<String, String> FAILSAFE_ELEMENT_CODER =
-      FailsafeElementCoder.of(StringUtf8Coder.of(), StringUtf8Coder.of());
+  public static final FailsafeElementCoder<String, String> FAILSAFE_ELEMENT_CODER = FailsafeElementCoder
+      .of(StringUtf8Coder.of(), StringUtf8Coder.of());
 
   /**
-   * The {@link Options} class provides the custom execution options passed by the executor at the
+   * The {@link Options} class provides the custom execution options passed by the
+   * executor at the
    * command-line.
    */
   public interface Options extends PipelineOptions, JavascriptTextTransformerOptions {
@@ -171,32 +183,31 @@ public class PubSubToBigQueryBatched {
 
     void setInputTopic(ValueProvider<String> value);
 
-    @Description(
-        "The Cloud Pub/Sub subscription to consume from. "
-            + "The name should be in the format of "
-            + "projects/<project-id>/subscriptions/<subscription-name>.")
+    @Description("The Cloud Pub/Sub subscription to consume from. "
+        + "The name should be in the format of "
+        + "projects/<project-id>/subscriptions/<subscription-name>.")
     ValueProvider<String> getInputSubscription();
 
     void setInputSubscription(ValueProvider<String> value);
 
-    @Description(
-        "This determines whether the template reads from " + "a pub/sub subscription or a topic")
+    @Description("This determines whether the template reads from " + "a pub/sub subscription or a topic")
     @Default.Boolean(false)
     Boolean getUseSubscription();
 
     void setUseSubscription(Boolean value);
 
-    @Description(
-        "The dead-letter table to output to within BigQuery in <project-id>:<dataset>.<table> "
-            + "format. If it doesn't exist, it will be created during pipeline execution.")
+    @Description("The dead-letter table to output to within BigQuery in <project-id>:<dataset>.<table> "
+        + "format. If it doesn't exist, it will be created during pipeline execution.")
     ValueProvider<String> getOutputDeadletterTable();
 
     void setOutputDeadletterTable(ValueProvider<String> value);
   }
 
   /**
-   * The main entry-point for pipeline execution. This method will start the pipeline but will not
-   * wait for it's execution to finish. If blocking execution is required, use the {@link
+   * The main entry-point for pipeline execution. This method will start the
+   * pipeline but will not
+   * wait for it's execution to finish. If blocking execution is required, use the
+   * {@link
    * PubSubToBigQuery#run(Options)} method to start the pipeline and invoke {@code
    * result.waitUntilFinish()} on the {@link PipelineResult}.
    *
@@ -209,9 +220,12 @@ public class PubSubToBigQueryBatched {
   }
 
   /**
-   * Runs the pipeline to completion with the specified options. This method does not wait until the
-   * pipeline is finished before returning. Invoke {@code result.waitUntilFinish()} on the result
-   * object to block until the pipeline is finished running if blocking programmatic execution is
+   * Runs the pipeline to completion with the specified options. This method does
+   * not wait until the
+   * pipeline is finished before returning. Invoke
+   * {@code result.waitUntilFinish()} on the result
+   * object to block until the pipeline is finished running if blocking
+   * programmatic execution is
    * required.
    *
    * @param options The execution options.
@@ -226,12 +240,12 @@ public class PubSubToBigQueryBatched {
 
     /*
      * Steps:
-     *  1) Read messages in from Pub/Sub
-     *  2) Transform the PubsubMessages into TableRows
-     *     - Transform message payload via UDF
-     *     - Convert UDF result to TableRow objects
-     *  3) Write successful records out to BigQuery
-     *  4) Write failed records out to BigQuery
+     * 1) Read messages in from Pub/Sub
+     * 2) Transform the PubsubMessages into TableRows
+     * - Transform message payload via UDF
+     * - Convert UDF result to TableRow objects
+     * 3) Write successful records out to BigQuery
+     * 4) Write failed records out to BigQuery
      */
 
     /*
@@ -241,65 +255,63 @@ public class PubSubToBigQueryBatched {
 
     PCollection<PubsubMessage> messages = null;
     if (options.getUseSubscription()) {
-      messages =
-          pipeline.apply(
-              "ReadPubSubSubscription",
-              PubsubIO.readMessagesWithAttributes()
-                  .fromSubscription(options.getInputSubscription()));
+      messages = pipeline.apply(
+          "ReadPubSubSubscription",
+          PubsubIO.readMessagesWithAttributes()
+              .fromSubscription(options.getInputSubscription()));
     } else {
-      messages =
-          pipeline.apply(
-              "ReadPubSubTopic",
-              PubsubIO.readMessagesWithAttributes().fromTopic(options.getInputTopic()));
+      messages = pipeline.apply(
+          "ReadPubSubTopic",
+          PubsubIO.readMessagesWithAttributes().fromTopic(options.getInputTopic()));
     }
 
-    PCollectionTuple convertedTableRows =
-        messages
-            /*
-             * Step #2: Transform the PubsubMessages into TableRows
-             */
-            .apply("ConvertMessageToTableRow", new PubsubMessageToTableRow(options));
+    PCollectionTuple convertedTableRows = messages
+        /*
+         * Step #2: Transform the PubsubMessages into TableRows
+         */
+        .apply("ConvertMessageToTableRow", new PubsubMessageToTableRow(options));
 
     /*
      * Step #3: Write the successful records out to BigQuery
      */
-    WriteResult writeResult =
-        convertedTableRows
-            .get(TRANSFORM_OUT)
-            .apply(
-                "WriteSuccessfulRecords",
-                BigQueryIO.writeTableRows()
-                    .withoutValidation()
-                    .withCreateDisposition(CreateDisposition.CREATE_NEVER)
-                    .withWriteDisposition(WriteDisposition.WRITE_APPEND)
-                    .withExtendedErrorInfo()
-                    .withMethod(BigQueryIO.Write.Method.FILE_LOADS)
-                    .withTriggeringFrequency(Duration.standardMinutes(5))
-                    .withNumFileShards(3)
-                    // .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors())
-                    .to(options.getOutputTableSpec()));
+    WriteResult writeResult = convertedTableRows
+        .get(TRANSFORM_OUT)
+        .apply(
+            "WriteSuccessfulRecords",
+            BigQueryIO.writeTableRows()
+                .withoutValidation()
+                .withCreateDisposition(CreateDisposition.CREATE_NEVER)
+                .withWriteDisposition(WriteDisposition.WRITE_APPEND)
+                .withExtendedErrorInfo()
+                .withMethod(BigQueryIO.Write.Method.FILE_LOADS)
+                .withTriggeringFrequency(Duration.standardMinutes(1))
+                // .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors())
+                .to(options.getOutputTableSpec()));
+
+                
 
     /*
      * Step 3 Contd.
-     * Elements that failed inserts into BigQuery are extracted and converted to FailsafeElement
+     * Elements that failed inserts into BigQuery are extracted and converted to
+     * FailsafeElement
      */
     // PCollection<FailsafeElement<String, String>> failedInserts =
-    //     writeResult
-    //         .getFailedInserts()
-    //         .apply(
-    //             "WrapInsertionErrors",
-    //             MapElements.into(FAILSAFE_ELEMENT_CODER.getEncodedTypeDescriptor())
-    //                 .via((BigQueryInsertError e) -> wrapBigQueryInsertError(e)))
-    //         .setCoder(FAILSAFE_ELEMENT_CODER);
+    // writeResult
+    // .getFailedInserts()
+    // .apply(
+    // "WrapInsertionErrors",
+    // MapElements.into(FAILSAFE_ELEMENT_CODER.getEncodedTypeDescriptor())
+    // .via((BigQueryInsertError e) -> wrapBigQueryInsertError(e)))
+    // .setCoder(FAILSAFE_ELEMENT_CODER);
 
     /*
      * Step #4: Write records that failed table row transformation
      * or conversion out to BigQuery deadletter table.
      */
     // PCollectionList.of(
-    //         ImmutableList.of(
-    //             convertedTableRows.get(UDF_DEADLETTER_OUT),
-    //             convertedTableRows.get(TRANSFORM_DEADLETTER_OUT)))
+    //     ImmutableList.of(
+    //         convertedTableRows.get(UDF_DEADLETTER_OUT),
+    //         convertedTableRows.get(TRANSFORM_DEADLETTER_OUT)))
     //     .apply("Flatten", Flatten.pCollections())
     //     .apply(
     //         "WriteFailedRecords",
@@ -311,24 +323,42 @@ public class PubSubToBigQueryBatched {
     //                     DEFAULT_DEADLETTER_TABLE_SUFFIX))
     //             .setErrorRecordsTableSchema(ResourceUtils.getDeadletterTableSchemaJson())
     //             .build());
-
-    // 5) Insert records that failed insert into deadletter table
-    // failedInserts.apply(
-    //     "WriteFailedRecords",
-    //     ErrorConverters.WriteStringMessageErrors.newBuilder()
-    //         .setErrorRecordsTable(
-    //             ValueProviderUtils.maybeUseDefaultDeadletterTable(
-    //                 options.getOutputDeadletterTable(),
-    //                 options.getOutputTableSpec(),
-    //                 DEFAULT_DEADLETTER_TABLE_SUFFIX))
-    //         .setErrorRecordsTableSchema(ResourceUtils.getDeadletterTableSchemaJson())
-    //         .build());
+             
+    // // 5) Insert records that failed insert into deadletter table
+    writeResult
+        .getFailedInserts()
+        // .apply("WriteFailedRecords",
+        .apply(
+              "WriteFailedRecordsToBigQuery",
+              BigQueryIO.writeTableRows()
+                  .to(options.getOutputDeadletterTable())
+                  .withJsonSchema(ResourceUtils.getDeadletterTableSchemaJson())
+                  .withCreateDisposition(CreateDisposition.CREATE_IF_NEEDED)
+                  .withWriteDisposition(WriteDisposition.WRITE_APPEND));
+            // ErrorConverters.WriteStringMessageErrors.newBuilder()
+            //     .setErrorRecordsTable(
+            //         ValueProviderUtils.maybeUseDefaultDeadletterTable(
+            //             options.getOutputDeadletterTable(),
+            //             options.getOutputTableSpec(),
+            //             DEFAULT_DEADLETTER_TABLE_SUFFIX))
+            //     .setErrorRecordsTableSchema(ResourceUtils.getDeadletterTableSchemaJson())
+            //     .build());
+    // "WriteFailedRecords",
+    // ErrorConverters.WriteStringMessageErrors.newBuilder()
+    // .setErrorRecordsTable(
+    // ValueProviderUtils.maybeUseDefaultDeadletterTable(
+    // options.getOutputDeadletterTable(),
+    // options.getOutputTableSpec(),
+    // DEFAULT_DEADLETTER_TABLE_SUFFIX))
+    // .setErrorRecordsTableSchema(ResourceUtils.getDeadletterTableSchemaJson())
+    // .build());
 
     return pipeline.run();
   }
 
   /**
-   * If deadletterTable is available, it is returned as is, otherwise outputTableSpec +
+   * If deadletterTable is available, it is returned as is, otherwise
+   * outputTableSpec +
    * defaultDeadLetterTableSuffix is returned instead.
    */
   private static ValueProvider<String> maybeUseDefaultDeadletterTable(
@@ -352,25 +382,37 @@ public class PubSubToBigQueryBatched {
   }
 
   /**
-   * The {@link PubsubMessageToTableRow} class is a {@link PTransform} which transforms incoming
-   * {@link PubsubMessage} objects into {@link TableRow} objects for insertion into BigQuery while
-   * applying an optional UDF to the input. The executions of the UDF and transformation to {@link
-   * TableRow} objects is done in a fail-safe way by wrapping the element with it's original payload
-   * inside the {@link FailsafeElement} class. The {@link PubsubMessageToTableRow} transform will
-   * output a {@link PCollectionTuple} which contains all output and dead-letter {@link
+   * The {@link PubsubMessageToTableRow} class is a {@link PTransform} which
+   * transforms incoming
+   * {@link PubsubMessage} objects into {@link TableRow} objects for insertion
+   * into BigQuery while
+   * applying an optional UDF to the input. The executions of the UDF and
+   * transformation to {@link
+   * TableRow} objects is done in a fail-safe way by wrapping the element with
+   * it's original payload
+   * inside the {@link FailsafeElement} class. The {@link PubsubMessageToTableRow}
+   * transform will
+   * output a {@link PCollectionTuple} which contains all output and dead-letter
+   * {@link
    * PCollection}.
    *
-   * <p>The {@link PCollectionTuple} output will contain the following {@link PCollection}:
+   * <p>
+   * The {@link PCollectionTuple} output will contain the following
+   * {@link PCollection}:
    *
    * <ul>
-   *   <li>{@link PubSubToBigQuery#UDF_OUT} - Contains all {@link FailsafeElement} records
-   *       successfully processed by the optional UDF.
-   *   <li>{@link PubSubToBigQuery#UDF_DEADLETTER_OUT} - Contains all {@link FailsafeElement}
-   *       records which failed processing during the UDF execution.
-   *   <li>{@link PubSubToBigQuery#TRANSFORM_OUT} - Contains all records successfully converted from
-   *       JSON to {@link TableRow} objects.
-   *   <li>{@link PubSubToBigQuery#TRANSFORM_DEADLETTER_OUT} - Contains all {@link FailsafeElement}
-   *       records which couldn't be converted to table rows.
+   * <li>{@link PubSubToBigQuery#UDF_OUT} - Contains all {@link FailsafeElement}
+   * records
+   * successfully processed by the optional UDF.
+   * <li>{@link PubSubToBigQuery#UDF_DEADLETTER_OUT} - Contains all
+   * {@link FailsafeElement}
+   * records which failed processing during the UDF execution.
+   * <li>{@link PubSubToBigQuery#TRANSFORM_OUT} - Contains all records
+   * successfully converted from
+   * JSON to {@link TableRow} objects.
+   * <li>{@link PubSubToBigQuery#TRANSFORM_DEADLETTER_OUT} - Contains all
+   * {@link FailsafeElement}
+   * records which couldn't be converted to table rows.
    * </ul>
    */
   static class PubsubMessageToTableRow
@@ -385,30 +427,30 @@ public class PubSubToBigQueryBatched {
     @Override
     public PCollectionTuple expand(PCollection<PubsubMessage> input) {
 
-      PCollectionTuple udfOut =
-          input
-              // Map the incoming messages into FailsafeElements so we can recover from failures
-              // across multiple transforms.
-              .apply("MapToRecord", ParDo.of(new PubsubMessageToFailsafeElementFn()))
-              .apply(
-                  "InvokeUDF",
-                  FailsafeJavascriptUdf.<PubsubMessage>newBuilder()
-                      .setFileSystemPath(options.getJavascriptTextTransformGcsPath())
-                      .setFunctionName(options.getJavascriptTextTransformFunctionName())
-                      .setSuccessTag(UDF_OUT)
-                      .setFailureTag(UDF_DEADLETTER_OUT)
-                      .build());
+      PCollectionTuple udfOut = input
+          // Map the incoming messages into FailsafeElements so we can recover from
+          // failures
+          // across multiple transforms.
+          .apply("MapToRecord", ParDo.of(new PubsubMessageToFailsafeElementFn()))
+          .apply(
+              "InvokeUDF",
+              FailsafeJavascriptUdf.<PubsubMessage>newBuilder()
+                  .setFileSystemPath(options.getJavascriptTextTransformGcsPath())
+                  .setFunctionName(options.getJavascriptTextTransformFunctionName())
+                  .setSuccessTag(UDF_OUT)
+                  .setFailureTag(UDF_DEADLETTER_OUT)
+                  .build());
 
-      // Convert the records which were successfully processed by the UDF into TableRow objects.
-      PCollectionTuple jsonToTableRowOut =
-          udfOut
-              .get(UDF_OUT)
-              .apply(
-                  "JsonToTableRow",
-                  FailsafeJsonToTableRow.<PubsubMessage>newBuilder()
-                      .setSuccessTag(TRANSFORM_OUT)
-                      .setFailureTag(TRANSFORM_DEADLETTER_OUT)
-                      .build());
+      // Convert the records which were successfully processed by the UDF into
+      // TableRow objects.
+      PCollectionTuple jsonToTableRowOut = udfOut
+          .get(UDF_OUT)
+          .apply(
+              "JsonToTableRow",
+              FailsafeJsonToTableRow.<PubsubMessage>newBuilder()
+                  .setSuccessTag(TRANSFORM_OUT)
+                  .setFailureTag(TRANSFORM_DEADLETTER_OUT)
+                  .build());
 
       // Re-wrap the PCollections so we can return a single PCollectionTuple
       return PCollectionTuple.of(UDF_OUT, udfOut.get(UDF_OUT))
@@ -419,8 +461,10 @@ public class PubSubToBigQueryBatched {
   }
 
   /**
-   * The {@link PubsubMessageToFailsafeElementFn} wraps an incoming {@link PubsubMessage} with the
-   * {@link FailsafeElement} class so errors can be recovered from and the original message can be
+   * The {@link PubsubMessageToFailsafeElementFn} wraps an incoming
+   * {@link PubsubMessage} with the
+   * {@link FailsafeElement} class so errors can be recovered from and the
+   * original message can be
    * output to a error records table.
    */
   static class PubsubMessageToFailsafeElementFn
