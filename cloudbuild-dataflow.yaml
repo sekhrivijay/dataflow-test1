@@ -1,4 +1,7 @@
 steps:
+###########################################################
+# Step 1: Show Branch Name
+###########################################################
 - id: 'branch name'
   name: 'alpine'
   entrypoint: 'sh'  
@@ -9,6 +12,21 @@ steps:
       echo "$BRANCH_NAME"
       echo "***********************"
 
+
+###########################################################
+# Step 2: Retrieve the cached .m2 directory from GCS
+###########################################################
+- id: 'Copy .m2 from GCS'
+  name: 'gcr.io/cloud-builders/gsutil'
+  args:
+  - '-m'
+  - 'rsync'
+  - '-r'
+  - 'gs://${_BUCKET}/cache/.m2'
+  - '/cache/.m2'
+  volumes:
+  - path: '/cache/.m2'
+    name: 'm2_cache'
 
 # - id: 'setup'
 #   name: 'alpine'
@@ -22,9 +40,78 @@ steps:
 #       export TEMP_LOCATION="${BUCKET_NAME}/temp"
 #       #export GOOGLE_APPLICATION_CREDENTIALS=sa.json
 
-- id: 'mvn version'  
-  name: maven:3-jdk-8
-  entrypoint: mvn
-  args: ['clean', 'compile']      
+
+###########################################################
+# Step 3: Clean, Compile
+###########################################################
+- id: 'Mavcen Clean Complie'
+  name: 'gcr.io/cloud-builders/mvn'
+  args:
+  - 'clean'
+  - 'compile'
+  volumes:
+  - path: '/cache/.m2'
+    name: 'm2_cache'
+  env:
+  - MAVEN_OPTS=-Dmaven.repo.local=/cache/.m2
+
+###########################################################
+# Step 3: Update cached .m2 directory on GCS with any
+#         additional dependencies downloaded during the
+#         build.
+###########################################################
+- id: 'Copy .m2 back to GCS'
+  name: 'gcr.io/cloud-builders/gsutil'
+  args:
+  - '-m'
+  - 'rsync'
+  - '-r'
+  - '/cache/.m2'
+  - 'gs://${_BUCKET}/cache/.m2/'
+  volumes:
+  - path: '/cache/.m2'
+    name: 'm2_cache'
+
+###########################################################
+# Step 3: Build
+###########################################################
+- id: 'Build Dataflow Template'
+  name: 'gcr.io/cloud-builders/mvn'
+  args:
+  - 'compile'
+  - 'exec:java'
+  - '-Dexec.mainClass=com.google.cloud.teleport.templates.PubSubToBigQueryBatched'  
+  - '-Dexec.cleanupDaemonThreads=false'    
+  - '-Dexec.args="--streaming --enableStreamingEngine --project=${PROJECT} --region=us-central1 --stagingLocation=${_BUCKET}/staging --tempLocation=${TEMP_LOCATION} --templateLocation=${TEMPLATE} --useSubscription=true --runner=DataflowRunner"'  
+ 
+
+  volumes:
+  - path: '/cache/.m2'
+    name: 'm2_cache'
+  env:
+  - MAVEN_OPTS=-Dmaven.repo.local=/cache/.m2
 
 
+
+
+
+# - id: 'mvn version'  
+#   name: maven:3-jdk-8
+#   entrypoint: mvn
+#   args: ['clean', 'compile']      
+
+
+substitutions:
+  # Default values
+  _BUCKET: 'sekhrivijay-rcs-dataflow-test1'
+  TEMPLATE: '${_BUCKET}/templates/PubSubToBigQueryBatch.json'
+  TEMP_LOCATION: '${_BUCKET}/temp'
+  PROJECT: 'sekhrivijayrcs1'
+
+artifacts:
+  # Upload the jars created during the build.
+  objects:
+    location: 'gs://${_BUCKET}/artifacts/$BRANCH_NAME/$REVISION_ID'
+    paths: ['target/*.jar']
+
+timeout: 3600s    
