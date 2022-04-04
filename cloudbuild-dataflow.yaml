@@ -82,7 +82,7 @@ steps:
   - 'exec:java'
   - '-Dexec.mainClass=com.google.cloud.teleport.templates.PubSubToBigQueryBatched'  
   - '-Dexec.cleanupDaemonThreads=false'    
-  - '-Dexec.args="--streaming --enableStreamingEngine --project=${PROJECT} --region=us-central1 --stagingLocation=${BUCKET_NAME}/staging --tempLocation=${TEMP_LOCATION} --templateLocation=${TEMPLATE} --useSubscription=true --runner=DataflowRunner"'  
+  - '-Dexec.args="--streaming --enableStreamingEngine --project=sekhrivijayrcs1 --region=us-central1 --stagingLocation=${BUCKET_NAME}/staging --tempLocation=${TEMP_LOCATION} --templateLocation=${TEMPLATE} --useSubscription=true --runner=DataflowRunner"'  
  
 
   volumes:
@@ -107,7 +107,7 @@ substitutions:
   BUCKET_NAME: 'gs://sekhrivijay-rcs-dataflow-test1'
   TEMPLATE: 'gs://sekhrivijay-rcs-dataflow-test1/templates/PubSubToBigQueryBatch.json'
   TEMP_LOCATION: 'gs://sekhrivijay-rcs-dataflow-test1/temp'
-  PROJECT: 'sekhrivijayrcs1'
+  # PROJECT: 'sekhrivijayrcs1'
 
 
 artifacts:
