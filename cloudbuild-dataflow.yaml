@@ -1,16 +1,16 @@
 steps:
-###########################################################
-# Step 1: Show Branch Name
-###########################################################
-- id: 'branch name'
-  name: 'alpine'
-  entrypoint: 'sh'  
-  args: 
-  - '-c'
-  - | 
-      echo "***********************"
-      echo "$BRANCH_NAME"
-      echo "***********************"
+# ###########################################################
+# # Step 1: Show Branch Name
+# ###########################################################
+# - id: 'branch name'
+#   name: 'alpine'
+#   entrypoint: 'sh'  
+#   args: 
+#   - '-c'
+#   - | 
+#       echo "***********************"
+#       echo "$BRANCH_NAME"
+#       echo "***********************"
 
 
 ###########################################################
@@ -70,7 +70,7 @@ steps:
   - 'exec:java'
   - '-Dexec.mainClass=com.google.cloud.teleport.templates.PubSubToBigQueryBatched'  
   - '-Dexec.cleanupDaemonThreads=false'    
-  - '-Dexec.args="--streaming --enableStreamingEngine --project=${_PROJECT} --region=us-central1 --stagingLocation=${_BUCKET_NAME}/staging --tempLocation=${_TEMP_LOCATION} --templateLocation=${_TEMPLATE} --useSubscription=true --runner=DataflowRunner"'  
+  - '-Dexec.args=\"--streaming --enableStreamingEngine --project=${_PROJECT} --region=us-central1 --stagingLocation=${_BUCKET_NAME}/staging --tempLocation=${_TEMP_LOCATION} --templateLocation=${_TEMPLATE} --useSubscription=true --runner=DataflowRunner\"'  
  
 
   volumes:
