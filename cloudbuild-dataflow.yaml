@@ -65,6 +65,7 @@ steps:
   name: maven:3-jdk-11
   entrypoint: mvn
   args:
+  - 'clean'
   - 'compile'
   - 'exec:java'
   - '-Dexec.mainClass=com.google.cloud.teleport.templates.PubSubToBigQueryBatched'  
