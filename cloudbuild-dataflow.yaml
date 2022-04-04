@@ -109,6 +109,7 @@ substitutions:
   TEMP_LOCATION: 'gs://sekhrivijay-rcs-dataflow-test1/temp'
   PROJECT: 'sekhrivijayrcs1'
 
+
 artifacts:
   # Upload the jars created during the build.
   objects:
