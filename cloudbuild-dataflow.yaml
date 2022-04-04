@@ -13,20 +13,20 @@ steps:
 #       echo "***********************"
 
 
-# ###########################################################
-# # Step 2: Retrieve the cached .m2 directory from GCS
-# ###########################################################
-# - id: 'Copy .m2 from GCS'
-#   name: 'gcr.io/cloud-builders/gsutil'
-#   args:
-#   - '-m'
-#   - 'rsync'
-#   - '-r'
-#   - 'gs://${_BUCKET}/cache/.m2'
-#   - '/cache/.m2'
-#   volumes:
-#   - path: '/cache/.m2'
-#     name: 'm2_cache'
+###########################################################
+# Step 2: Retrieve the cached .m2 directory from GCS
+###########################################################
+- id: 'Copy .m2 from GCS'
+  name: 'gcr.io/cloud-builders/gsutil'
+  args:
+  - '-m'
+  - 'rsync'
+  - '-r'
+  - 'gs://${_BUCKET}/cache/.m2'
+  - '/cache/.m2'
+  volumes:
+  - path: '/cache/.m2'
+    name: 'm2_cache'
 
 # - id: 'setup'
 #   name: 'alpine'
