@@ -116,4 +116,4 @@ artifacts:
     location: 'gs://${_BUCKET}/artifacts/$BRANCH_NAME/$REVISION_ID'
     paths: ['target/*.jar']
 
-timeout: 3600s    
+timeout: 7200s    
