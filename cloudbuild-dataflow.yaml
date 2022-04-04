@@ -63,6 +63,7 @@ steps:
 - id: 'Build Dataflow Template'
   # name: 'gcr.io/cloud-builders/mvn'
   name: maven:3-jdk-11
+  entrypoint: mvn
   args:
   - 'compile'
   - 'exec:java'
