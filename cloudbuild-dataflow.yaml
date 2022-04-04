@@ -137,10 +137,10 @@ substitutions:
   _PROJECT: 'sekhrivijayrcs1'
 
 
-artifacts:
-  # Upload the jars created during the build.
-  objects:
-    location: 'gs://${_BUCKET}/artifacts/$BRANCH_NAME/$REVISION_ID'
-    paths: ['target/*.jar']
+# artifacts:
+#   # Upload the jars created during the build.
+#   objects:
+#     location: 'gs://${_BUCKET}/artifacts/$BRANCH_NAME/$REVISION_ID'
+#     paths: ['target/*.jar']
 
 timeout: 7200s    
