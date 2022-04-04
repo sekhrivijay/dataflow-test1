@@ -73,6 +73,10 @@ steps:
     name: 'm2_cache'
   env:
   - MAVEN_OPTS=-Dmaven.repo.local=/cache/.m2  
+  - _PROJECT=${_PROJECT}
+  - _BUCKET_NAME=${_BUCKET_NAME}
+  - _TEMP_LOCATION=${_TEMP_LOCATION}
+  - _TEMPLATE=${_TEMPLATE}    
 
 
 

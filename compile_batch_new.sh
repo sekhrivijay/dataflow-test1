@@ -1,4 +1,4 @@
-mvn compile exec:java \
+mvn clean compile exec:java \
 -Dexec.mainClass=com.google.cloud.teleport.templates.PubSubToBigQueryBatched \
 -Dexec.cleanupDaemonThreads=false \
 -Dexec.args=" \
