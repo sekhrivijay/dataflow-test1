@@ -41,19 +41,43 @@ steps:
 #       #export GOOGLE_APPLICATION_CREDENTIALS=sa.json
 
 
+# ###########################################################
+# # Step 3: Clean, Compile
+# ###########################################################
+# - id: 'Mavcen Clean Complie'
+#   name: 'gcr.io/cloud-builders/mvn'
+#   args:
+#   - 'clean'
+#   - 'compile'
+#   volumes:
+#   - path: '/cache/.m2'
+#     name: 'm2_cache'
+#   env:
+#   - MAVEN_OPTS=-Dmaven.repo.local=/cache/.m2
+
+
+
 ###########################################################
-# Step 3: Clean, Compile
+# Step 3: Build
 ###########################################################
-- id: 'Mavcen Clean Complie'
-  name: 'gcr.io/cloud-builders/mvn'
+- id: 'Build Dataflow Template'
+  # name: 'gcr.io/cloud-builders/mvn'
+  name: maven:3-jdk-11
   args:
-  - 'clean'
   - 'compile'
+  - 'exec:java'
+  - '-Dexec.mainClass=com.google.cloud.teleport.templates.PubSubToBigQueryBatched'  
+  - '-Dexec.cleanupDaemonThreads=false'    
+  - '-Dexec.args="--streaming --enableStreamingEngine --project=${_PROJECT} --region=us-central1 --stagingLocation=${_BUCKET_NAME}/staging --tempLocation=${_TEMP_LOCATION} --templateLocation=${_TEMPLATE} --useSubscription=true --runner=DataflowRunner"'  
+ 
+
   volumes:
   - path: '/cache/.m2'
     name: 'm2_cache'
   env:
   - MAVEN_OPTS=-Dmaven.repo.local=/cache/.m2
+
+
 
 ###########################################################
 # Step 3: Update cached .m2 directory on GCS with any
@@ -71,29 +95,6 @@ steps:
   volumes:
   - path: '/cache/.m2'
     name: 'm2_cache'
-
-###########################################################
-# Step 3: Build
-###########################################################
-- id: 'Build Dataflow Template'
-  name: 'gcr.io/cloud-builders/mvn'
-  args:
-  - 'compile'
-  - 'exec:java'
-  - '-Dexec.mainClass=com.google.cloud.teleport.templates.PubSubToBigQueryBatched'  
-  - '-Dexec.cleanupDaemonThreads=false'    
-  - '-Dexec.args="--streaming --enableStreamingEngine --project=${_PROJECT} --region=us-central1 --stagingLocation=${_BUCKET_NAME}/staging --tempLocation=${_TEMP_LOCATION} --templateLocation=${_TEMPLATE} --useSubscription=true --runner=DataflowRunner"'  
- 
-
-  volumes:
-  - path: '/cache/.m2'
-    name: 'm2_cache'
-  env:
-  - MAVEN_OPTS=-Dmaven.repo.local=/cache/.m2
-
-
-
-
 
 # - id: 'mvn version'  
 #   name: maven:3-jdk-8
