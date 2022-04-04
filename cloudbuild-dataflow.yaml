@@ -63,30 +63,41 @@ steps:
 - id: 'Build Dataflow Template'
   # name: 'gcr.io/cloud-builders/mvn'
   name: maven:3-jdk-11
-  entrypoint: mvn
+  entrypoint: bash
   #args: ['clean', 'compile' , 'exec:java', '-Dexec.mainClass=com.google.cloud.teleport.templates.PubSubToBigQueryBatched' , '-Dexec.cleanupDaemonThreads=false', '-Dexec.args=" --streaming --enableStreamingEngine --project=${_PROJECT} --region=us-central1 --stagingLocation=${_BUCKET_NAME}/staging --tempLocation=${_TEMP_LOCATION} --templateLocation=${_TEMPLATE} --useSubscription=true --runner=DataflowRunner"']      
   args:
-  - 'clean'
-  - 'compile'
-  - 'exec:java'
-  - '-Dexec.mainClass=com.google.cloud.teleport.templates.PubSubToBigQueryBatched'  
-  - '-Dexec.cleanupDaemonThreads=false'    
-  - '-Dexec.args=" --streaming"'
-  - '-Dexec.args=" --enableStreamingEngine"'
-  - '-Dexec.args=" --project=${_PROJECT}"'
-  - '-Dexec.args=" --region=us-central1"'
-  - '-Dexec.args=" --stagingLocation=${_BUCKET_NAME}/staging"'
-  - '-Dexec.args=" --tempLocation=${_TEMP_LOCATION}"'
-  - '-Dexec.args=" --templateLocation=${_TEMPLATE}"'
-  - '-Dexec.args=" --useSubscription=true"'
-  - '-Dexec.args=" --runner=DataflowRunner"'  
- 
+  - './compile_batch.sh'
 
   volumes:
   - path: '/cache/.m2'
     name: 'm2_cache'
   env:
-  - MAVEN_OPTS=-Dmaven.repo.local=/cache/.m2
+  - MAVEN_OPTS=-Dmaven.repo.local=/cache/.m2  
+
+
+
+# ###########################################################
+# # Step 3: Build
+# ###########################################################
+# - id: 'Build Dataflow Template'
+#   # name: 'gcr.io/cloud-builders/mvn'
+#   name: maven:3-jdk-11
+#   entrypoint: mvn
+     
+#   args:
+#   - 'clean'
+#   - 'compile'
+#   - 'exec:java'
+#   - '-Dexec.mainClass=com.google.cloud.teleport.templates.PubSubToBigQueryBatched'  
+#   - '-Dexec.cleanupDaemonThreads=false'    
+#   - '-Dexec.args=" --streaming --enableStreamingEngine --project=${_PROJECT} --region=us-central1 --stagingLocation=${_BUCKET_NAME}/staging --tempLocation=${_TEMP_LOCATION} --templateLocation=${_TEMPLATE} --useSubscription=true --runner=DataflowRunner"'
+ 
+
+  # volumes:
+  # - path: '/cache/.m2'
+  #   name: 'm2_cache'
+  # env:
+  # - MAVEN_OPTS=-Dmaven.repo.local=/cache/.m2
 
 
 
